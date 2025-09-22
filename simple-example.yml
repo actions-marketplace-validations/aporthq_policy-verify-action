@@ -1,0 +1,14 @@
+# Simple APort Policy Verification
+# Copy this to your .github/workflows/ directory
+
+name: APort Policy Check
+on: [pull_request]
+
+jobs:
+  policy-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aporthq/policy-verify-action@v1
+        with:
+          agent-id: ${{ secrets.APORT_AGENT_ID }}

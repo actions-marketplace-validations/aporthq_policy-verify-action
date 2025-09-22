@@ -1,0 +1,164 @@
+name: "APort Policy Verification"
+description: "Verify pull requests against APort agent policies for enhanced security"
+author: "APort Team"
+branding:
+  icon: "shield"
+  color: "blue"
+
+inputs:
+  agent-id:
+    description: "APort Agent ID to verify (optional if APORT_AGENT_ID secret is set)"
+    required: false
+    default: ""
+  policy-pack:
+    description: "Policy pack to use for verification"
+    required: false
+    default: "repo.v1"
+  api-base:
+    description: "APort API base URL"
+    required: false
+    default: "https://api.aport.io"
+  fail-on-violation:
+    description: "Fail the workflow if policy is violated"
+    required: false
+    default: "true"
+  comment-on-pr:
+    description: "Add comment to PR with verification results"
+    required: false
+    default: "true"
+
+outputs:
+  allowed:
+    description: "Whether the agent is allowed to proceed"
+    value: ${{ steps.verify.outputs.allowed }}
+  reasons:
+    description: "Reasons for policy decision"
+    value: ${{ steps.verify.outputs.reasons }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Compute diff stats
+      id: diff
+      shell: bash
+      run: |
+        BASE="${{ github.event.pull_request.base.sha }}"
+        HEAD="${{ github.event.pull_request.head.sha }}"
+        FILES=$(git diff --name-only "$BASE" "$HEAD" | wc -l)
+        LINES=$(git diff --shortstat "$BASE" "$HEAD" | awk '{print $4}')
+
+        # Calculate PR size in KB
+        PR_SIZE=$(git diff --stat "$BASE" "$HEAD" | tail -1 | awk '{print $3}' | sed 's/KB//' || echo "0")
+        if [ -z "$PR_SIZE" ] || [ "$PR_SIZE" = "0" ]; then
+          # Fallback: estimate from diff size
+          PR_SIZE=$(git diff --stat "$BASE" "$HEAD" | awk '{sum += $3} END {print int(sum/1024)}' || echo "0")
+        fi
+
+        # Get changed file paths for path allowlist enforcement
+        FILE_PATHS=$(git diff --name-only "$BASE" "$HEAD" | head -10 | jq -R -s -c 'split("\n")[:-1]' || echo "[]")
+
+        # Check if PR requires review (based on branch protection or labels)
+        REQUIRES_REVIEW="false"
+        if [ "${{ github.event.pull_request.draft }}" = "false" ] && [ "${{ github.event.pull_request.reviews.length }}" = "0" ]; then
+          REQUIRES_REVIEW="true"
+        fi
+
+        echo "files=${FILES:-0}" >> $GITHUB_OUTPUT
+        echo "lines=${LINES:-0}" >> $GITHUB_OUTPUT
+        echo "pr_size_kb=${PR_SIZE:-0}" >> $GITHUB_OUTPUT
+        echo "file_paths=${FILE_PATHS}" >> $GITHUB_OUTPUT
+        echo "requires_review=${REQUIRES_REVIEW}" >> $GITHUB_OUTPUT
+
+    - name: APort policy verification
+      id: verify
+      shell: bash
+      env:
+        APORT_AGENT_ID: ${{ inputs.agent-id || secrets.APORT_AGENT_ID }}
+        APORT_API_BASE: ${{ inputs.api-base }}
+        APORT_POLICY_PACK: ${{ inputs.policy-pack }}
+      run: |
+        if [ -z "$APORT_AGENT_ID" ]; then
+          echo "❌ Error: APORT_AGENT_ID is required"
+          echo "Please set the APORT_AGENT_ID secret or provide agent-id input"
+          exit 1
+        fi
+
+        echo "🔍 Verifying agent: $APORT_AGENT_ID"
+        echo "📊 Changes: ${{ steps.diff.outputs.files }} files, ${{ steps.diff.outputs.lines }} lines"
+
+        # Build context payload
+        BODY=$(jq -n \
+          --arg id "$APORT_AGENT_ID" \
+          --arg repo "${{ github.repository }}" \
+          --arg branch "${{ github.event.pull_request.base.ref }}" \
+          --arg actor "${{ github.actor }}" \
+          --arg app "${{ github.app }}" \
+          --argjson files ${{ steps.diff.outputs.files }} \
+          --argjson lines ${{ steps.diff.outputs.lines }} \
+          --argjson pr_size_kb ${{ steps.diff.outputs.pr_size_kb }} \
+          --argjson file_paths "${{ steps.diff.outputs.file_paths }}" \
+          --argjson requires_review "${{ steps.diff.outputs.requires_review }}" \
+          --argjson labels "$(jq -c '[.pull_request.labels[].name]' <<< '${{ toJson(github.event) }}')" \
+          --argjson reviews "${{ github.event.pull_request.reviews.length || 0 }}" \
+          --argjson draft "${{ github.event.pull_request.draft }}" \
+          --argjson mergeable "${{ github.event.pull_request.mergeable }}" \
+          '{agent_id:$id, context:{repo:$repo, base_branch:$branch, github_actor:$actor, github_app:$app, files_changed:$files, lines_added:$lines, pr_size_kb:$pr_size_kb, file_paths:$file_paths, requires_review:$requires_review, labels:$labels, reviews:$reviews, is_draft:$draft, is_mergeable:$mergeable}}')
+
+        echo "📤 Sending policy verification request to $APORT_API_BASE/api/verify/policy/$APORT_POLICY_PACK"
+        RESPONSE=$(curl -s -X POST "$APORT_API_BASE/api/verify/policy/$APORT_POLICY_PACK" \
+             -H "Content-Type: application/json" \
+             -d "$BODY")
+
+        echo "📥 APort Response: $RESPONSE"
+
+        # Parse response
+        ALLOW=$(echo "$RESPONSE" | jq -r '.allow // false')
+        REASONS=$(echo "$RESPONSE" | jq -r '.reasons // []')
+
+        echo "allowed=$ALLOW" >> $GITHUB_OUTPUT
+        echo "reasons=$REASONS" >> $GITHUB_OUTPUT
+
+        if [ "$ALLOW" = "false" ]; then
+          echo "❌ APort policy violation detected"
+          echo "Reasons: $REASONS"
+          if [ "${{ inputs.fail-on-violation }}" = "true" ]; then
+            exit 1
+          fi
+        else
+          echo "✅ APort policy check passed"
+        fi
+
+    - name: Comment on PR
+      if: always() && inputs.comment-on-pr == 'true'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const allowed = '${{ steps.verify.outputs.allowed }}' === 'true';
+          const reasons = JSON.parse('${{ steps.verify.outputs.reasons }}');
+
+          const status = allowed ? "✅" : "❌";
+          const title = allowed ? "APort Policy Check Passed" : "APort Policy Check Failed";
+          const emoji = allowed ? "🛡️" : "⚠️";
+
+          const comment = `${emoji} **${title}**
+
+          **Agent:** \`${{ env.APORT_AGENT_ID }}\`
+          **Actor:** \`${{ github.actor }}\`
+          **Repository:** \`${{ github.repository }}\`
+          **Branch:** \`${{ github.event.pull_request.base.ref }}\`
+          **Policy Pack:** \`${{ inputs.policy-pack }}\`
+
+          ${allowed 
+            ? `This PR meets all APort policy requirements and is safe to proceed.`
+            : `**Policy Violations:**\n${reasons.map(r => `- ${r}`).join('\n')}\n\nPlease review the policy requirements and update your PR accordingly.`
+          }
+
+          ---
+          *Powered by [APort](https://aport.io) - Agent Identity Verification*`;
+
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });
