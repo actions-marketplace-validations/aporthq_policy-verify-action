@@ -22,7 +22,7 @@ jobs:
       - uses: aporthq/policy-verify-action@v1
         with:
           agent-id: ${{ secrets.APORT_AGENT_ID }}
-          policy-pack: "repo.v1"
+          policy-pack: "code.repository.merge.v1"
           api-base: "https://api.aport.io"
           fail-on-violation: true
           comment-on-pr: true
@@ -36,7 +36,7 @@ jobs:
       - uses: aporthq/policy-verify-action@v1
         with:
           agent-id: ${{ secrets.APORT_AGENT_ID }}
-          policy-pack: "repo.v1"
+          policy-pack: "code.repository.merge.v1"
 
   # Multiple policy checks
   multi-policy-check:
@@ -48,12 +48,12 @@ jobs:
         uses: aporthq/policy-verify-action@v1
         with:
           agent-id: ${{ secrets.APORT_AGENT_ID }}
-          policy-pack: "repo.v1"
+          policy-pack: "code.repository.merge.v1"
           comment-on-pr: false
 
       - name: Compliance policy check
         uses: aporthq/policy-verify-action@v1
         with:
           agent-id: ${{ secrets.APORT_AGENT_ID }}
-          policy-pack: "repo.v1"
+          policy-pack: "code.repository.merge.v1"
           comment-on-pr: true

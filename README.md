@@ -31,7 +31,7 @@ jobs:
         uses: aporthq/policy-verify-action@v1
         with:
           agent-id: ${{ secrets.APORT_AGENT_ID }}
-          policy-pack: 'repo.v1'
+          policy-pack: 'code.repository.merge.v1'
           fail-on-violation: true
           comment-on-pr: true
 ```
@@ -59,7 +59,7 @@ jobs:
         uses: aporthq/policy-verify-action@v1
         with:
           agent-id: ${{ github.event.inputs.agent_id || secrets.APORT_AGENT_ID }}
-          policy-pack: 'repo.v1'
+          policy-pack: 'code.repository.merge.v1'
           api-base: 'https://api.aport.io'
           fail-on-violation: true
           comment-on-pr: true
@@ -71,7 +71,7 @@ jobs:
 | Input | Description | Required | Default |
 |-------|-------------|----------|---------|
 | `agent-id` | The APort Agent ID to use for policy verification | ✅ | - |
-| `policy-pack` | The APort policy pack ID to enforce (e.g., repo.v1) | ✅ | `repo.v1` |
+| `policy-pack` | The APort policy pack ID to enforce (e.g., code.repository.merge.v1) | ✅ | `code.repository.merge.v1` |
 | `api-base` | The base URL for the APort API | ❌ | `https://api.aport.io` |
 | `fail-on-violation` | Whether the action should fail if a policy violation is detected | ❌ | `true` |
 | `comment-on-pr` | Whether to add a comment to the pull request with policy results | ❌ | `true` |
@@ -117,14 +117,14 @@ In your APort agent passport, set up the following:
       "allowed_apps": ["your-github-app"]
     }
   },
-  "capabilities": ["repo.v1"],
+  "capabilities": ["code.repository.merge.v1"],
   "assurance_level": 3
 }
 ```
 
 ## 📊 Policy Packs
 
-### repo.v1 - Repository Safety
+### code.repository.merge.v1 - Repository Safety
 
 Enforces comprehensive repository-level safety policies:
 
