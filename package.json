@@ -1,0 +1,52 @@
+{
+  "name": "aport-policy-verify-action",
+  "version": "1.0.0",
+  "description": "Verify pull requests against APort agent policies for enhanced security",
+  "main": "action.yml",
+  "scripts": {
+    "test": "node mock-api-server.js",
+    "test:api": "./test-api.sh",
+    "test:local": "./test-local.sh",
+    "lint": "echo 'No linting configured for GitHub Actions'",
+    "validate": "echo 'Validating action.yml...' && node -e \"require('yaml').parse(require('fs').readFileSync('action.yml', 'utf8')); console.log('✅ action.yml is valid YAML')\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aporthq/policy-verify-action.git"
+  },
+  "keywords": [
+    "github-actions",
+    "aport",
+    "policy",
+    "verification",
+    "security",
+    "compliance",
+    "agent",
+    "identity",
+    "automation"
+  ],
+  "author": "APort Team",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/aporthq/policy-verify-action/issues"
+  },
+  "homepage": "https://github.com/aporthq/policy-verify-action#readme",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "devDependencies": {
+    "yaml": "^2.3.4"
+  },
+  "files": [
+    "action.yml",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "example-usage.yml",
+    "simple-example.yml",
+    "test-workflow.yml",
+    "test-api.sh",
+    "test-local.sh",
+    "mock-api-server.js"
+  ]
+}

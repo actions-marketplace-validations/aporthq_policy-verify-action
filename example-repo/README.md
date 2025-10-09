@@ -1,4 +1,4 @@
-# APort Policy Verification Example
+# APort Policy Verification Example Repository
 
 This repository demonstrates how to use the APort Policy Verification GitHub Action to enforce security policies on pull requests.
 
@@ -17,13 +17,19 @@ Click the "Fork" button to create your own copy of this repository.
 ```json
 {
   "name": "My GitHub Bot",
-  "capabilities": ["repo.v1"],
+  "capabilities": ["code.repository.merge.v1"],
   "assurance_level": 3,
   "integrations": {
     "github": {
       "allowed_actors": ["my-bot[bot]", "acme-ci"],
       "allowed_apps": ["my-github-app"]
     }
+  },
+  "limits": {
+    "max_files_changed": 100,
+    "max_lines_added": 1000,
+    "max_pr_size_kb": 500,
+    "required_reviews": 1
   }
 }
 ```
@@ -38,7 +44,8 @@ Add the following secrets to your repository:
 
 | Secret Name | Description | Example Value |
 |-------------|-------------|---------------|
-| `APORT_AGENT_ID` | Your APort Agent ID | `agent_1234567890abcdef` |
+| `APORT_AGENT_ID` | Your APort Agent ID | `ap_1234567890abcdef` |
+| `APORT_API_KEY` | Your APort API Key (optional) | `aport_sk_...` |
 
 ### 4. Test the Action
 
@@ -55,17 +62,19 @@ Configure your agent passport with the following policy settings:
 
 ```json
 {
+  "name": "My GitHub Bot",
+  "capabilities": ["code.repository.merge.v1"],
+  "assurance_level": 3,
   "integrations": {
     "github": {
       "allowed_actors": ["your-bot[bot]", "acme-ci"],
       "allowed_apps": ["your-github-app"]
     }
   },
-  "capabilities": ["repo.v1"],
-  "assurance_level": 3,
   "limits": {
     "max_files_changed": 100,
     "max_lines_added": 1000,
+    "max_pr_size_kb": 500,
     "required_reviews": 1
   }
 }
@@ -88,7 +97,7 @@ The workflow is configured to run on:
 
 The action enforces the following policies:
 
-### Repository Safety (repo.v1)
+### Repository Safety (code.repository.merge.v1)
 
 - **Allowed Repositories** - Only specified repositories
 - **Branch Protection** - Changes must go through proper review
@@ -156,7 +165,7 @@ jobs:
         uses: aporthq/policy-verify-action@v1
         with:
           agent-id: ${{ secrets.APORT_AGENT_ID }}
-          policy-pack: 'repo.v1'
+          policy-pack: 'code.repository.merge.v1'
           fail-on-violation: true
           comment-on-pr: true
 ```
@@ -184,7 +193,7 @@ jobs:
         uses: aporthq/policy-verify-action@v1
         with:
           agent-id: ${{ github.event.inputs.agent_id || secrets.APORT_AGENT_ID }}
-          policy-pack: 'repo.v1'
+          policy-pack: 'code.repository.merge.v1'
           api-base: 'https://api.aport.io'
           fail-on-violation: true
           comment-on-pr: true
@@ -204,7 +213,7 @@ MIT License - see LICENSE file for details.
 
 ## 🆘 Support
 
-- 📖 [APort Documentation](https://aport.io/docs)
+- 📖 [APort Documentation](https://docs.aport.io)
 - 💬 [Discord Community](https://discord.gg/aport)
 - 🐛 [Issue Tracker](https://github.com/aporthq/policy-verify-action/issues)
 - 📧 [Email Support](mailto:support@aport.io)
@@ -213,4 +222,4 @@ MIT License - see LICENSE file for details.
 
 - [APort Dashboard](https://aport.io)
 - [Policy Verify Action](https://github.com/aporthq/policy-verify-action)
-- [APort Documentation](https://aport.io/docs)
+- [APort Documentation](https://docs.aport.io/docs)

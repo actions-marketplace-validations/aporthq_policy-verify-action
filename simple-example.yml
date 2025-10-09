@@ -2,13 +2,20 @@
 # Copy this to your .github/workflows/ directory
 
 name: APort Policy Check
-on: [pull_request]
+on:
+  pull_request:
+    types: [opened, synchronize]
 
 jobs:
   policy-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: aporthq/policy-verify-action@v1
+
+      - name: APort Policy Verification
+        uses: aporthq/policy-verify-action@v1
         with:
           agent-id: ${{ secrets.APORT_AGENT_ID }}
+          policy-pack: "code.repository.merge.v1"
+          fail-on-violation: true
+          comment-on-pr: true
