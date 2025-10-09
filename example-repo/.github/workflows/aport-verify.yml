@@ -56,7 +56,7 @@ jobs:
             '{agent_id:$id, context:{repo:$repo, base_branch:$branch, github_actor:$actor, github_app:$app, files_changed:$files, lines_added:$lines, labels:$labels, reviews:$reviews, is_draft:$draft, is_mergeable:$mergeable}}')
 
           echo "📤 Sending policy verification request..."
-          RESPONSE=$(curl -s -X POST "$APORT_API_BASE/api/verify/policy/repo.v1" \
+          RESPONSE=$(curl -s -X POST "$APORT_API_BASE/api/verify/policy/code.repository.merge.v1" \
                -H "Content-Type: application/json" \
                -d "$BODY")
 

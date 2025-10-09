@@ -13,7 +13,7 @@ inputs:
   policy-pack:
     description: "Policy pack to use for verification"
     required: false
-    default: "repo.v1"
+    default: "code.repository.merge.v1"
   api-base:
     description: "APort API base URL"
     required: false

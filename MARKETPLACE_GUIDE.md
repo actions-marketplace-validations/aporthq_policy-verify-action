@@ -157,7 +157,7 @@ APort Policy Verification ensures only authorized AI agents and bots can make ch
 - 🤖 Bot security and verification
 - 🏢 Enterprise compliance
 - 🔒 Multi-repository policy management
-- 📊 Audit trail and monitoring
+- 📊 Verifiable Attestation and monitoring
 
 ## Features
 

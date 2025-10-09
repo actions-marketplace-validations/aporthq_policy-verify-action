@@ -17,7 +17,7 @@ Click the "Fork" button to create your own copy of this repository.
 ```json
 {
   "name": "My GitHub Bot",
-  "capabilities": ["repo.v1"],
+  "capabilities": ["code.repository.merge.v1"],
   "assurance_level": 3,
   "integrations": {
     "github": {
@@ -61,7 +61,7 @@ Configure your agent passport with the following policy settings:
       "allowed_apps": ["your-github-app"]
     }
   },
-  "capabilities": ["repo.v1"],
+  "capabilities": ["code.repository.merge.v1"],
   "assurance_level": 3,
   "limits": {
     "max_files_changed": 100,
@@ -88,7 +88,7 @@ The workflow is configured to run on:
 
 The action enforces the following policies:
 
-### Repository Safety (repo.v1)
+### Repository Safety (code.repository.merge.v1)
 
 - **Allowed Repositories** - Only specified repositories
 - **Branch Protection** - Changes must go through proper review
@@ -156,7 +156,7 @@ jobs:
         uses: aporthq/policy-verify-action@v1
         with:
           agent-id: ${{ secrets.APORT_AGENT_ID }}
-          policy-pack: 'repo.v1'
+          policy-pack: 'code.repository.merge.v1'
           fail-on-violation: true
           comment-on-pr: true
 ```
@@ -184,7 +184,7 @@ jobs:
         uses: aporthq/policy-verify-action@v1
         with:
           agent-id: ${{ github.event.inputs.agent_id || secrets.APORT_AGENT_ID }}
-          policy-pack: 'repo.v1'
+          policy-pack: 'code.repository.merge.v1'
           api-base: 'https://api.aport.io'
           fail-on-violation: true
           comment-on-pr: true
